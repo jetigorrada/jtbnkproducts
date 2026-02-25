@@ -27,13 +27,24 @@ export default function FieldRenderer({ fields, values, onChange }) {
 }
 
 function FieldItem({ field, value, onChange }) {
-  const { key, label, type, required, placeholder, description, maxLength, multiline, min, max } = field;
+  const { key, label, type, required, placeholder, description, maxLength, multiline, min, max, minLength, minItems } = field;
+
+  // Compose constraint info
+  let constraintInfo = [];
+  if (required) constraintInfo.push('Required');
+  if (typeof minLength === 'number') constraintInfo.push(`Min length: ${minLength}`);
+  if (typeof maxLength === 'number') constraintInfo.push(`Max length: ${maxLength}`);
+  if (typeof min === 'number') constraintInfo.push(`Min value: ${min}`);
+  if (typeof max === 'number') constraintInfo.push(`Max value: ${max}`);
+  if (typeof minItems === 'number') constraintInfo.push(`At least ${minItems} item${minItems > 1 ? 's' : ''}`);
+  const constraintText = constraintInfo.length > 0 ? constraintInfo.join(' · ') : null;
 
   const renderLabel = () => (
     <label className="field-label">
       {label}
       {required && <span className="required-star">*</span>}
       {description && <span className="field-desc">{description}</span>}
+      {constraintText && <span className="field-constraints">{constraintText}</span>}
     </label>
   );
 
