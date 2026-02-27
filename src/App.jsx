@@ -16,7 +16,13 @@ function App() {
 
   const selectedEndpoint = endpoints.find((e) => e.id === selectedId);
 
-  // Group endpoints by tag
+  // Group endpoints by tag with icons
+  const tagIcons = {
+    Products: '📦',
+    Categories: '📂',
+    Hierarchies: '🌳',
+  };
+
   const grouped = endpoints.reduce((acc, ep) => {
     const tag = ep.tag;
     if (!acc[tag]) acc[tag] = [];
@@ -41,7 +47,7 @@ function App() {
         <nav className="sidebar-nav">
           {Object.entries(grouped).map(([tag, eps]) => (
             <div key={tag} className="nav-group">
-              <h2 className="nav-group-title">{tag}</h2>
+              <h2 className="nav-group-title">{tagIcons[tag] || '📋'} {tag}</h2>
               {eps.map((ep) => {
                 const mc = methodColors[ep.method];
                 return (

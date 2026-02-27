@@ -3,8 +3,7 @@ import { useFormState } from '../hooks/useFormState';
 import FieldRenderer from './FieldRenderer';
 import JsonOutput from './JsonOutput';
 import SavedItems from './SavedItems';
-import CategoryPreview from './CategoryPreview';
-import ProductPreview from './ProductPreview';
+import PhonePreview from './PhonePreview';
 import { saveItem, updateItem, getSavedCategories } from '../storage';
 import { methodColors } from '../endpoints';
 import { exampleData } from '../exampleData';
@@ -83,10 +82,11 @@ export default function EndpointForm({ endpoint }) {
 
   const isUpsertCategory = endpoint.id === 'upsertCategory';
   const isCreateProduct = endpoint.id === 'createProduct';
+  const isProductEndpoint = endpoint.tag === 'Products';
 
-  // Check if this is Create Product and there are no saved categories
-  const savedCategories = isCreateProduct ? getSavedCategories() : [];
-  const noCategoriesWarning = isCreateProduct && savedCategories.length === 0;
+  // Block ALL product endpoints when no categories exist
+  const savedCategories = isProductEndpoint ? getSavedCategories() : [];
+  const noCategoriesBlock = isProductEndpoint && savedCategories.length === 0;
 
   // Build current category preview data from path + body values
   const currentCategory = isUpsertCategory
@@ -112,6 +112,28 @@ export default function EndpointForm({ endpoint }) {
       }
     : null;
 
+  // If it's any product endpoint and there are no categories, show a blocker
+  if (noCategoriesBlock) {
+    return (
+      <div className="no-categories-block">
+        <div className="no-categories-block-inner">
+          <span className="block-icon">📂</span>
+          <h2 className="block-title">Create a Category First</h2>
+          <p className="block-desc">
+            You need at least one saved category before you can work with products.<br/>
+            Go to <strong>Upsert Category</strong> in the sidebar, fill in the details, and save it.
+          </p>
+          <div className="block-steps">
+            <div className="block-step"><span className="block-step-num">1</span> Open <strong>Upsert Category</strong> from the sidebar</div>
+            <div className="block-step"><span className="block-step-num">2</span> Fill in the category key, name, and description</div>
+            <div className="block-step"><span className="block-step-num">3</span> Click <strong>Save</strong> to store it</div>
+            <div className="block-step"><span className="block-step-num">4</span> Come back here to create products</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Shared split-layout for category and product forms
   if (isUpsertCategory || isCreateProduct) {
     return (
@@ -126,14 +148,14 @@ export default function EndpointForm({ endpoint }) {
             <div className="preview-header">
               <h3>App Preview</h3>
               <span className="preview-subtitle">
-                {isUpsertCategory
-                  ? 'How categories appear in the app'
-                  : 'How the product appears in the app'}
+                How it appears in the mobile app — click to navigate
               </span>
             </div>
-            {isUpsertCategory
-              ? <CategoryPreview currentCategory={currentCategory} />
-              : <ProductPreview currentProduct={currentProduct} />}
+            <PhonePreview
+              mode={isUpsertCategory ? 'category' : 'product'}
+              currentCategory={currentCategory}
+              currentProduct={currentProduct}
+            />
           </div>
         </div>
         {/* Output at bottom */}
@@ -180,6 +202,7 @@ export default function EndpointForm({ endpoint }) {
           {/* Base URL */}
           <div className="form-section">
             <h3 className="section-title">Base URL</h3>
+            <p className="section-desc">The server address where the API is running</p>
             <input
               type="text"
               value={baseUrl}
@@ -193,6 +216,7 @@ export default function EndpointForm({ endpoint }) {
           {endpoint.pathParams.length > 0 && (
             <div className="form-section">
               <h3 className="section-title">Path Parameters</h3>
+              <p className="section-desc">Values that go directly into the URL path</p>
               <FieldRenderer
                 fields={endpoint.pathParams}
                 values={pathValues}
@@ -205,6 +229,7 @@ export default function EndpointForm({ endpoint }) {
           {endpoint.queryParams.length > 0 && (
             <div className="form-section">
               <h3 className="section-title">Query Parameters</h3>
+              <p className="section-desc">Optional filters added to the URL as ?key=value</p>
               <FieldRenderer
                 fields={endpoint.queryParams}
                 values={queryValues}
@@ -217,6 +242,7 @@ export default function EndpointForm({ endpoint }) {
           {endpoint.bodyFields.length > 0 && (
             <div className="form-section">
               <h3 className="section-title">Request Body</h3>
+              <p className="section-desc">The data that will be sent as JSON in the request</p>
               <FieldRenderer
                 fields={endpoint.bodyFields}
                 values={bodyValues}
@@ -309,19 +335,10 @@ export default function EndpointForm({ endpoint }) {
           )}
         </div>
 
-        {noCategoriesWarning && (
-          <div className="no-categories-banner">
-            <span className="banner-icon">⚠️</span>
-            <div className="banner-text">
-              <strong>Categories required</strong>
-              <p>You need to create at least one category before creating a product. Go to <strong>Upsert Category</strong> in the sidebar, create and save a category first.</p>
-            </div>
-          </div>
-        )}
-
         <div className="form-body">
           <div className="form-section">
             <h3 className="section-title">Base URL</h3>
+            <p className="section-desc">The server address where the API is running</p>
             <input
               type="text"
               value={baseUrl}
@@ -334,6 +351,7 @@ export default function EndpointForm({ endpoint }) {
           {endpoint.pathParams.length > 0 && (
             <div className="form-section">
               <h3 className="section-title">Path Parameters</h3>
+              <p className="section-desc">Values that go directly into the URL path</p>
               <FieldRenderer fields={endpoint.pathParams} values={pathValues} onChange={setPathValues} />
             </div>
           )}
@@ -341,6 +359,7 @@ export default function EndpointForm({ endpoint }) {
           {endpoint.queryParams.length > 0 && (
             <div className="form-section">
               <h3 className="section-title">Query Parameters</h3>
+              <p className="section-desc">Optional filters added to the URL as ?key=value</p>
               <FieldRenderer fields={endpoint.queryParams} values={queryValues} onChange={setQueryValues} />
             </div>
           )}
@@ -348,6 +367,7 @@ export default function EndpointForm({ endpoint }) {
           {endpoint.bodyFields.length > 0 && (
             <div className="form-section">
               <h3 className="section-title">Request Body</h3>
+              <p className="section-desc">The data that will be sent as JSON in the request</p>
               <FieldRenderer fields={endpoint.bodyFields} values={bodyValues} onChange={setBodyValues} />
             </div>
           )}

@@ -35,38 +35,38 @@ const translationsField = {
 };
 
 const linkFields = [
-  { key: 'type', label: 'Type', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. PDF' },
-  { key: 'name', label: 'Name', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. Terms and Conditions' },
+  { key: 'type', label: 'Type', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. PDF' },
+  { key: 'name', label: 'Name', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. Terms and Conditions' },
   { key: 'url', label: 'URL', type: T.TEXT, required: true, placeholder: 'e.g. https://cdn.example.com/doc.pdf' },
   additionsField,
   translationsField,
 ];
 
 const faqItemFields = [
-  { key: 'question', label: 'Question', type: T.TEXT, required: true, maxLength: 255, placeholder: 'Enter question' },
-  { key: 'answer', label: 'Answer', type: T.TEXT, required: true, maxLength: 2000, placeholder: 'Enter answer', multiline: true },
+  { key: 'question', label: 'Question', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'Enter question' },
+  { key: 'answer', label: 'Answer', type: T.TEXT, required: true, minLength: 1, maxLength: 2000, placeholder: 'Enter answer', multiline: true },
   additionsField,
   translationsField,
 ];
 
 const descriptionFields = [
-  { key: 'type', label: 'Type', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. pricing_section_header' },
-  { key: 'content', label: 'Content', type: T.TEXT, required: true, maxLength: 2000, placeholder: 'Description content', multiline: true },
+  { key: 'type', label: 'Type', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. pricing_section_header' },
+  { key: 'content', label: 'Content', type: T.TEXT, required: true, minLength: 1, maxLength: 2000, placeholder: 'Description content', multiline: true },
   additionsField,
   translationsField,
 ];
 
 const featureFields = [
-  { key: 'name', label: 'Name', type: T.TEXT, required: true, maxLength: 100, placeholder: 'e.g. Surprise Benefit' },
-  { key: 'description', label: 'Description', type: T.TEXT, required: false, maxLength: 2000, placeholder: 'Feature description', multiline: true },
-  { key: 'type', label: 'Type', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. benefit' },
+  { key: 'name', label: 'Name', type: T.TEXT, required: true, minLength: 1, maxLength: 100, placeholder: 'e.g. Surprise Benefit' },
+  { key: 'description', label: 'Description', type: T.TEXT, required: false, minLength: 1, maxLength: 2000, placeholder: 'Feature description', multiline: true },
+  { key: 'type', label: 'Type', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. benefit' },
   additionsField,
   translationsField,
 ];
 
 const categoryAdditionalDescFields = [
-  { key: 'content', label: 'Content', type: T.TEXT, required: true, maxLength: 2000, placeholder: 'Additional description content', multiline: true },
-  { key: 'type', label: 'Type', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. tagline' },
+  { key: 'content', label: 'Content', type: T.TEXT, required: true, minLength: 1, maxLength: 2000, placeholder: 'Additional description content', multiline: true },
+  { key: 'type', label: 'Type', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. tagline' },
   translationsField,
 ];
 
@@ -83,10 +83,10 @@ export const endpoints = [
     pathParams: [],
     queryParams: [],
     bodyFields: [
-      { key: 'externalProductId', label: 'External Product ID', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. ext-id-001' },
-      { key: 'productKey', label: 'Product Key', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. mortgage-2025-05-fixed-term' },
+      { key: 'externalProductId', label: 'External Product ID', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. ext-id-001' },
+      { key: 'productKey', label: 'Product Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. mortgage-2025-05-fixed-term' },
       { key: 'templateKey', label: 'Template Key', type: T.TEXT, required: false, maxLength: 255, placeholder: 'e.g. mortgages-fixed-term-view' },
-      { key: 'name', label: 'Product Name', type: T.TEXT, required: true, maxLength: 150, placeholder: 'e.g. Fixed-Term Mortgage' },
+      { key: 'name', label: 'Product Name', type: T.TEXT, required: true, minLength: 1, maxLength: 150, placeholder: 'e.g. Fixed-Term Mortgage' },
       { key: 'availabilityStartDate', label: 'Availability Start Date', type: T.DATETIME, required: true, placeholder: '2025-06-01T00:00:00Z' },
       { key: 'availabilityEndDate', label: 'Availability End Date', type: T.DATETIME, required: false, placeholder: '2025-12-01T23:59:59Z' },
       { key: 'rank', label: 'Rank', type: T.NUMBER, required: false, description: 'Supports decimals (e.g. 11.05)' },
@@ -107,7 +107,7 @@ export const endpoints = [
         itemType: 'object',
         itemLabel: 'Link Group',
         itemFields: [
-          { key: 'groupKey', label: 'Group Key', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. documents' },
+          { key: 'groupKey', label: 'Group Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. documents' },
           {
             key: 'links',
             label: 'Links',
@@ -118,7 +118,6 @@ export const endpoints = [
             itemLabel: 'Link',
             itemFields: linkFields,
           },
-          translationsField,
         ],
       },
       {
@@ -129,7 +128,7 @@ export const endpoints = [
         itemType: 'object',
         itemLabel: 'FAQ Section',
         itemFields: [
-          { key: 'faqKey', label: 'FAQ Key', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. faq-main-section' },
+          { key: 'faqKey', label: 'FAQ Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. faq-main-section' },
           {
             key: 'faqItems',
             label: 'FAQ Items',
@@ -172,7 +171,7 @@ export const endpoints = [
     tag: 'Products',
     summary: 'Update a product',
     pathParams: [
-      { key: 'productKey', label: 'Product Key', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. mortgage-2025-05-fixed-term' },
+      { key: 'productKey', label: 'Product Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. mortgage-2025-05-fixed-term' },
     ],
     queryParams: [],
     bodyFields: [
@@ -203,13 +202,13 @@ export const endpoints = [
     tag: 'Categories',
     summary: 'Upsert a category',
     pathParams: [
-      { key: 'categoryKey', label: 'Category Key', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. cards' },
+      { key: 'categoryKey', label: 'Category Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. cards' },
     ],
     queryParams: [],
     bodyFields: [
-      { key: 'externalCategoryId', label: 'External Category ID', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. ext-id-001' },
-      { key: 'name', label: 'Category Name', type: T.TEXT, required: true, maxLength: 50, placeholder: 'e.g. Accounts' },
-      { key: 'description', label: 'Description', type: T.TEXT, required: false, maxLength: 500, placeholder: 'e.g. Flexible, secure, and easy everyday banking.' },
+      { key: 'externalCategoryId', label: 'External Category ID', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. ext-id-001' },
+      { key: 'name', label: 'Category Name', type: T.TEXT, required: true, minLength: 1, maxLength: 50, placeholder: 'e.g. Accounts' },
+      { key: 'description', label: 'Description', type: T.TEXT, required: false, minLength: 1, maxLength: 500, placeholder: 'e.g. Flexible, secure, and easy everyday banking.' },
       { key: 'icon', label: 'Icon', type: T.TEXT, required: false, maxLength: 2000, placeholder: 'Icon reference or URL' },
       {
         key: 'additionalDescriptions',
@@ -232,7 +231,7 @@ export const endpoints = [
     tag: 'Categories',
     summary: 'Delete a category',
     pathParams: [
-      { key: 'categoryKey', label: 'Category Key', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. cards' },
+      { key: 'categoryKey', label: 'Category Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. cards' },
     ],
     queryParams: [],
     bodyFields: [],
@@ -245,7 +244,7 @@ export const endpoints = [
     tag: 'Hierarchies',
     summary: 'Upsert a hierarchy',
     pathParams: [
-      { key: 'hierarchyKey', label: 'Hierarchy Key', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. retail-products' },
+      { key: 'hierarchyKey', label: 'Hierarchy Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. retail-products' },
     ],
     queryParams: [],
     bodyFields: [
@@ -267,7 +266,7 @@ export const endpoints = [
     tag: 'Hierarchies',
     summary: 'Delete a hierarchy',
     pathParams: [
-      { key: 'hierarchyKey', label: 'Hierarchy Key', type: T.TEXT, required: true, maxLength: 255, placeholder: 'e.g. retail-products' },
+      { key: 'hierarchyKey', label: 'Hierarchy Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. retail-products' },
     ],
     queryParams: [],
     bodyFields: [],
