@@ -30,7 +30,7 @@ const translationsField = {
   key: 'translations',
   label: 'Translations',
   type: T.TRANSLATIONS,
-  description: 'Locale translations (e.g. en-US, fr-FR)',
+  description: 'English and Albanian translations',
   required: false,
 };
 

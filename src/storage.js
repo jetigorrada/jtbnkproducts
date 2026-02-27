@@ -158,7 +158,10 @@ export function getSavedCategories() {
     const bv = item.data?.bodyValues || {};
     return {
       key: pv.categoryKey || item.name,
+      categoryKey: pv.categoryKey || '',
       name: bv.name || item.name,
+      description: bv.description || '',
+      icon: bv.icon || '',
       externalId: bv.externalCategoryId || '',
       savedName: item.name,
     };
@@ -170,4 +173,25 @@ export function getSavedCategories() {
  */
 export function clearAll() {
   saveAll({ products: [], categories: [], hierarchies: [] });
+}
+
+/**
+ * Get all saved products with their categories.
+ * Returns array of { productKey, name, description, icon, categories: [categoryKey, ...] }
+ */
+export function getSavedProducts() {
+  const items = getAll();
+  return items.products.map((item) => {
+    const bv = item.data?.bodyValues || {};
+    return {
+      productKey: bv.productKey || item.name,
+      name: bv.name || item.name,
+      icon: bv.icon || '',
+      categories: bv.categories || [],
+      descriptions: bv.descriptions || [],
+      features: bv.features || [],
+      faqs: bv.faqs || [],
+      linkGroups: bv.linkGroups || [],
+    };
+  });
 }

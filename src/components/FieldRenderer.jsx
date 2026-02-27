@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import TranslationsField from './TranslationsField';
 import KeyValueField from './KeyValueField';
 import HierarchyField from './HierarchyField';
@@ -20,13 +21,14 @@ export default function FieldRenderer({ fields, values, onChange }) {
           field={field}
           value={values[field.key]}
           onChange={(val) => updateField(field.key, val)}
+          allFields={fields}
         />
       ))}
     </div>
   );
 }
 
-function FieldItem({ field, value, onChange }) {
+function FieldItem({ field, value, onChange, allFields }) {
   const { key, label, type, required, placeholder, description, maxLength, multiline, min, max, minLength, minItems } = field;
 
   // Compose constraint info
@@ -160,22 +162,21 @@ function FieldItem({ field, value, onChange }) {
     );
   }
 
-  // Key-value (additions)
+  // Key-value (additions) — collapsible, closed by default
   if (type === 'key-value') {
-    return (
-      <div className="field-group">
-        {renderLabel()}
-        <KeyValueField value={value || {}} onChange={onChange} />
-      </div>
-    );
+    return <CollapsibleKeyValue label={label} description={description} value={value} onChange={onChange} />;
   }
 
   // Translations
   if (type === 'translations') {
+    // Extract sibling text fields as translatable properties
+    const translatableFields = (allFields || [])
+      .filter((f) => f.key !== key && f.type === 'text')
+      .map((f) => ({ key: f.key, label: f.label, multiline: !!f.multiline }));
     return (
       <div className="field-group">
         {renderLabel()}
-        <TranslationsField value={value || {}} onChange={onChange} />
+        <TranslationsField value={value || {}} onChange={onChange} translatableFields={translatableFields} />
       </div>
     );
   }
@@ -281,6 +282,34 @@ function ArrayFieldRenderer({ field, value, onChange }) {
       <button type="button" className="btn-add" onClick={addItem}>
         + Add {itemLabel || 'Item'}
       </button>
+    </div>
+  );
+}
+
+/** Collapsible wrapper for Additions (key-value) — hidden by default */
+function CollapsibleKeyValue({ label, description, value, onChange }) {
+  const hasValues = value && Object.keys(value).length > 0;
+  const [open, setOpen] = useState(hasValues);
+
+  return (
+    <div className="field-group additions-toggle-group">
+      <button
+        type="button"
+        className={`additions-toggle-btn${open ? ' additions-open' : ''}`}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className={`additions-chevron${open ? ' additions-chevron-open' : ''}`}>▸</span>
+        <span className="additions-toggle-label">{label || 'Additions'}</span>
+        {description && <span className="additions-toggle-desc">— {description}</span>}
+        {hasValues && !open && (
+          <span className="additions-badge">{Object.keys(value).length}</span>
+        )}
+      </button>
+      {open && (
+        <div className="additions-content">
+          <KeyValueField value={value || {}} onChange={onChange} />
+        </div>
+      )}
     </div>
   );
 }

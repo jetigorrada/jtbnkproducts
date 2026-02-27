@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { getSavedCategories } from '../storage';
 
 /**
- * Category picker that shows saved categories as checkboxes.
- * value = array of category key strings
+ * Category picker — single-select radio buttons.
+ * value = array with one category key string (e.g. ['cards'])
  * onChange = (newArray) => void
  */
 export default function CategoryPicker({ value = [], onChange }) {
@@ -11,14 +11,20 @@ export default function CategoryPicker({ value = [], onChange }) {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    setCategories(getSavedCategories());
+    const raw = getSavedCategories();
+    const map = new Map();
+    for (const cat of raw) {
+      if (cat.key) map.set(cat.key, cat);
+    }
+    setCategories(Array.from(map.values()));
   }, [refreshKey]);
 
-  const toggle = (key) => {
+  const select = (key) => {
+    // Toggle off if already selected, otherwise select this one only
     if (value.includes(key)) {
-      onChange(value.filter((k) => k !== key));
+      onChange([]);
     } else {
-      onChange([...value, key]);
+      onChange([key]);
     }
   };
 
@@ -31,7 +37,7 @@ export default function CategoryPicker({ value = [], onChange }) {
         <p className="picker-empty-text">No categories saved yet</p>
         <p className="picker-empty-hint">
           Go to <strong>Upsert Category</strong> in the sidebar, fill in a category, and save it first.
-          Then come back here to select categories for your product.
+          Then come back here to select a category for your product.
         </p>
       </div>
     );
@@ -41,7 +47,7 @@ export default function CategoryPicker({ value = [], onChange }) {
     <div className="category-picker">
       <div className="category-picker-header">
         <span className="picker-count">
-          {value.length} of {categories.length} selected
+          {value.length ? '1 selected' : 'None selected'}
         </span>
         <button type="button" className="btn-add-sm" onClick={refresh}>
           ↻ Refresh
@@ -56,10 +62,11 @@ export default function CategoryPicker({ value = [], onChange }) {
               className={`category-picker-item ${isSelected ? 'selected' : ''}`}
             >
               <input
-                type="checkbox"
+                type="radio"
+                name="category-pick"
                 checked={isSelected}
-                onChange={() => toggle(cat.key)}
-                className="picker-checkbox"
+                onChange={() => select(cat.key)}
+                className="picker-radio"
               />
               <div className="picker-item-info">
                 <span className="picker-item-key">{cat.key}</span>
@@ -71,18 +78,16 @@ export default function CategoryPicker({ value = [], onChange }) {
       </div>
       {value.length > 0 && (
         <div className="picker-selected-tags">
-          {value.map((key) => (
-            <span key={key} className="picker-tag">
-              {key}
-              <button
-                type="button"
-                className="picker-tag-remove"
-                onClick={() => toggle(key)}
-              >
-                ×
-              </button>
-            </span>
-          ))}
+          <span className="picker-tag">
+            {value[0]}
+            <button
+              type="button"
+              className="picker-tag-remove"
+              onClick={() => onChange([])}
+            >
+              ×
+            </button>
+          </span>
         </div>
       )}
     </div>
