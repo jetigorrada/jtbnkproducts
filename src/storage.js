@@ -162,6 +162,7 @@ export function getSavedCategories() {
       name: bv.name || item.name,
       description: bv.description || '',
       icon: bv.icon || '',
+      additionalDescriptions: bv.additionalDescriptions || [],
       externalId: bv.externalCategoryId || '',
       savedName: item.name,
     };
@@ -187,6 +188,7 @@ export function getSavedProducts() {
       productKey: bv.productKey || item.name,
       name: bv.name || item.name,
       icon: bv.icon || '',
+      rank: typeof bv.rank === 'number' ? bv.rank : Infinity,
       categories: bv.categories || [],
       descriptions: bv.descriptions || [],
       features: bv.features || [],

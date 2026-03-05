@@ -1,12 +1,41 @@
 import { useState, useRef } from 'react';
 import { getItems, deleteItem, exportToFile, importFromFile, getAllItems } from '../storage';
+import { buildBodyFromSchema } from '../hooks/useFormState';
+
+/**
+ * Build the full API JSON output for a saved item, same logic as useFormState.buildOutput.
+ */
+function buildItemOutput(endpoint, itemData) {
+  const { pathValues = {}, queryValues = {}, bodyValues = {} } = itemData;
+
+  // Build URL
+  let url = endpoint.path;
+  for (const p of endpoint.pathParams) {
+    const val = pathValues[p.key] || `{${p.key}}`;
+    url = url.replace(`{${p.key}}`, encodeURIComponent(val));
+  }
+  const qp = new URLSearchParams();
+  for (const q of endpoint.queryParams) {
+    const val = queryValues[q.key];
+    if (val !== undefined && val !== '' && val !== null) qp.set(q.key, val);
+  }
+  const qs = qp.toString();
+  const fullUrl = url + (qs ? '?' + qs : '');
+
+  const method = endpoint.method;
+  const hasBody = endpoint.bodyFields?.length > 0 && method !== 'GET' && method !== 'DELETE';
+  const body = hasBody ? buildBodyFromSchema(endpoint.bodyFields, bodyValues) || {} : undefined;
+
+  return { method, url: fullUrl, body };
+}
 
 /**
  * Panel that shows saved items for the current endpoint, with load/delete/export/import.
  */
-export default function SavedItems({ endpointId, onLoad, refreshKey }) {
+export default function SavedItems({ endpointId, endpoint, onLoad, refreshKey }) {
   const [items, setItems] = useState(() => getItems(endpointId));
   const [importMsg, setImportMsg] = useState(null);
+  const [copyMsg, setCopyMsg] = useState(null);       // { itemId, text }
   const fileInputRef = useRef(null);
 
   // Refresh items when refreshKey changes (after save)
@@ -38,6 +67,53 @@ export default function SavedItems({ endpointId, onLoad, refreshKey }) {
     setTimeout(() => setImportMsg(null), 3000);
     // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const getItemJson = (item) => {
+    if (!endpoint) return '{}';
+    const output = buildItemOutput(endpoint, item.data);
+    return JSON.stringify(output.body ?? {}, null, 2);
+  };
+
+  const handleCopyJson = async (item) => {
+    const json = getItemJson(item);
+    try {
+      await navigator.clipboard.writeText(json);
+      setCopyMsg({ itemId: item.id, text: 'Copied!' });
+    } catch {
+      setCopyMsg({ itemId: item.id, text: 'Copy failed' });
+    }
+    setTimeout(() => setCopyMsg(null), 2000);
+  };
+
+  const handleDownloadJson = (item) => {
+    const json = getItemJson(item);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+
+    // Build descriptive filename: type prefix + category context + item name
+    const safeName = item.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+    let prefix = '';
+    if (endpoint) {
+      const bv = item.data?.bodyValues || {};
+      const pv = item.data?.pathValues || {};
+      if (endpoint.id === 'upsertCategory') {
+        const catKey = pv.categoryKey || bv.name || '';
+        prefix = 'category_' + (catKey ? catKey.replace(/[^a-zA-Z0-9_-]/g, '_') + '_' : '');
+      } else if (endpoint.tag === 'Products') {
+        const cats = bv.categories;
+        const catLabel = Array.isArray(cats) && cats.length > 0 ? cats[0] : '';
+        prefix = 'product_' + (catLabel ? 'in_' + catLabel.replace(/[^a-zA-Z0-9_-]/g, '_') + '_' : '');
+      }
+    }
+    a.download = `${prefix}${safeName}.json`;
+
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const formatDate = (ts) => {
@@ -89,6 +165,20 @@ export default function SavedItems({ endpointId, onLoad, refreshKey }) {
                 <span className="saved-item-date">{formatDate(item.timestamp)}</span>
               </div>
               <div className="saved-item-btns">
+                <button
+                  className="btn-json-action"
+                  onClick={() => handleCopyJson(item)}
+                  title="Copy API JSON to clipboard"
+                >
+                  {copyMsg?.itemId === item.id ? copyMsg.text : '📋 Copy JSON'}
+                </button>
+                <button
+                  className="btn-json-action"
+                  onClick={() => handleDownloadJson(item)}
+                  title="Download API JSON as file"
+                >
+                  ↓ Download JSON
+                </button>
                 <button
                   className="btn-load"
                   onClick={() => onLoad(item)}

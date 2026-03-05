@@ -1,6 +1,7 @@
 /**
  * Example data for each endpoint, based on the OpenAPI schema examples.
  * Used by the "Load Example" feature to pre-fill forms.
+ * Translations use only en-US and sq-AL (Albanian).
  */
 
 export const exampleData = {
@@ -25,19 +26,12 @@ export const exampleData = {
               type: 'PDF',
               name: 'Terms and Conditions',
               url: 'https://cdn.example.com/documents/mortgage-terms-and-conditions.pdf',
-              additions: {
-                additionalProp1: 'string',
-                additionalProp2: 'string',
-                additionalProp3: 'string',
-              },
               translations: {
                 'en-US': {
-                  name: 'Product',
-                  description: 'This is product',
+                  name: 'Terms and Conditions',
                 },
-                'fr-FR': {
-                  name: 'Produit',
-                  description: "C'est un produit",
+                'sq-AL': {
+                  name: 'Kushtet dhe Rregullat',
                 },
               },
             },
@@ -52,19 +46,16 @@ export const exampleData = {
               question: 'Can I transfer my existing mortgage from another bank?',
               answer:
                 'Yes, you can transfer your existing mortgage from another bank to us through a process called a home loan balance transfer. It allows you to move your outstanding loan to our bank, often to enjoy better interest rates, lower EMIs, or improved loan terms.',
-              additions: {
-                additionalProp1: 'string',
-                additionalProp2: 'string',
-                additionalProp3: 'string',
-              },
               translations: {
                 'en-US': {
-                  name: 'Product',
-                  description: 'This is product',
+                  question: 'Can I transfer my existing mortgage from another bank?',
+                  answer:
+                    'Yes, you can transfer your existing mortgage from another bank to us through a process called a home loan balance transfer.',
                 },
-                'fr-FR': {
-                  name: 'Produit',
-                  description: "C'est un produit",
+                'sq-AL': {
+                  question: 'A mund ta transferoj hipoteken time ekzistuese nga nje banke tjeter?',
+                  answer:
+                    'Po, ju mund ta transferoni hipoteken tuaj ekzistuese nga nje banke tjeter tek ne permes nje procesi te quajtur transferim i bilancit te kredise.',
                 },
               },
             },
@@ -75,19 +66,12 @@ export const exampleData = {
         {
           type: 'pricing_section_header',
           content: 'This is the best product.',
-          additions: {
-            additionalProp1: 'string',
-            additionalProp2: 'string',
-            additionalProp3: 'string',
-          },
           translations: {
             'en-US': {
-              name: 'Product',
-              description: 'This is product',
+              content: 'This is the best product.',
             },
-            'fr-FR': {
-              name: 'Produit',
-              description: "C'est un produit",
+            'sq-AL': {
+              content: 'Ky eshte produkti me i mire.',
             },
           },
         },
@@ -97,37 +81,25 @@ export const exampleData = {
           name: 'Surprise Benefit',
           description: 'Surprise benefit when you apply now!',
           type: 'benefit',
-          additions: {
-            additionalProp1: 'string',
-            additionalProp2: 'string',
-            additionalProp3: 'string',
-          },
           translations: {
             'en-US': {
-              name: 'Product',
-              description: 'This is product',
+              name: 'Surprise Benefit',
+              description: 'Surprise benefit when you apply now!',
             },
-            'fr-FR': {
-              name: 'Produit',
-              description: "C'est un produit",
+            'sq-AL': {
+              name: 'Perfitim Surprize',
+              description: 'Perfitim surprize kur aplikoni tani!',
             },
           },
         },
       ],
       translations: {
         'en-US': {
-          name: 'Product',
-          description: 'This is product',
+          name: 'Fixed-Term Mortgage',
         },
-        'fr-FR': {
-          name: 'Produit',
-          description: "C'est un produit",
+        'sq-AL': {
+          name: 'Hipoteke me Afat te Caktuar',
         },
-      },
-      additions: {
-        additionalProp1: 'string',
-        additionalProp2: 'string',
-        additionalProp3: 'string',
       },
     },
   },
@@ -157,30 +129,23 @@ export const exampleData = {
           type: 'tagline',
           translations: {
             'en-US': {
-              name: 'Product',
-              description: 'This is product',
+              content: 'A mortgage is a long-term loan that helps you turn the keys to your dream home into reality.',
             },
-            'fr-FR': {
-              name: 'Produit',
-              description: "C'est un produit",
+            'sq-AL': {
+              content: 'Nje hipoteke eshte nje kredi afatgjate qe ju ndihmon te realizoni shtepine e enderrave tuaja.',
             },
           },
         },
       ],
       translations: {
         'en-US': {
-          name: 'Product',
-          description: 'This is product',
+          name: 'Accounts',
+          description: 'Flexible, secure, and easy everyday banking.',
         },
-        'fr-FR': {
-          name: 'Produit',
-          description: "C'est un produit",
+        'sq-AL': {
+          name: 'Llogarite',
+          description: 'Banke e perditshme fleksibel, e sigurt dhe e lehte.',
         },
-      },
-      additions: {
-        additionalProp1: 'string',
-        additionalProp2: 'string',
-        additionalProp3: 'string',
       },
     },
   },
@@ -204,9 +169,6 @@ export const exampleData = {
           ],
         },
       ],
-      additions: {
-        additionalProp1: 'string',
-      },
     },
   },
 };

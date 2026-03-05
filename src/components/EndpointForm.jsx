@@ -27,14 +27,108 @@ export default function EndpointForm({ endpoint }) {
   const [savedRefreshKey, setSavedRefreshKey] = useState(0);
   const [loadedItemId, setLoadedItemId] = useState(null);
   const [saveMsg, setSaveMsg] = useState(null);
+  const [validationErrors, setValidationErrors] = useState([]);
   const [outputCollapsed, setOutputCollapsed] = useState(false);
 
   const output = buildOutput();
   const mc = methodColors[endpoint.method];
 
+  /** Walk fields and collect missing-required errors */
+  const validate = () => {
+    const errors = [];
+
+    // Check path params
+    (endpoint.pathParams || []).forEach((p) => {
+      if (p.required && !pathValues[p.key]?.toString().trim()) {
+        errors.push(`${p.label || p.key} is required`);
+      }
+    });
+
+    // Recursive body field checker
+    const checkFields = (fields, values, prefix = '') => {
+      (fields || []).forEach((f) => {
+        const label = prefix ? `${prefix} → ${f.label || f.key}` : (f.label || f.key);
+        const val = values?.[f.key];
+
+        if (f.required) {
+          if (f.type === 'array') {
+            if (!Array.isArray(val) || val.length === 0) {
+              errors.push(`${label} requires at least one item`);
+            } else {
+              if (f.maxItems && val.length > f.maxItems) {
+                errors.push(`${label} allows at most ${f.maxItems} items`);
+              }
+              if (f.itemFields) {
+                val.forEach((item, idx) => {
+                  checkFields(f.itemFields, item, `${label} #${idx + 1}`);
+                });
+              }
+            }
+          } else if (f.type === 'category-picker') {
+            if (!Array.isArray(val) || val.length === 0) {
+              errors.push(`${label} is required`);
+            }
+          } else if (f.type === 'translations') {
+            // translations auto-filled — skip
+          } else if (f.type === 'hierarchy') {
+            if (!Array.isArray(val) || val.length === 0) {
+              errors.push(`${label} is required`);
+            }
+          } else if (f.type === 'key-value') {
+            // handled via pinnedKeys below
+          } else if (val === undefined || val === null || val.toString().trim() === '') {
+            errors.push(`${label} is required`);
+          }
+        }
+
+        // Validate pinnedKeys inside key-value fields
+        if (f.type === 'key-value' && f.pinnedKeys) {
+          const kvVal = val || {};
+          f.pinnedKeys.forEach((pin) => {
+            if (pin.type === 'yesno') {
+              if (pin.required && kvVal[pin.key] !== 'yes' && kvVal[pin.key] !== 'no') {
+                errors.push(`${pin.label || pin.key} — you must choose Yes or No`);
+              }
+            } else if (pin.showWhen) {
+              // Only validate conditional pins when their yesno is "yes"
+              if (kvVal[pin.showWhen] === 'yes' && pin.required) {
+                if (!kvVal[pin.key]?.toString().trim()) {
+                  errors.push(`${pin.label || pin.key} is required`);
+                }
+              }
+            } else if (pin.required) {
+              if (!kvVal[pin.key]?.toString().trim()) {
+                errors.push(`${pin.label || pin.key} is required`);
+              }
+            }
+          });
+        }
+
+        // Recurse into non-array object fields
+        if (f.type === 'object' && f.fields) {
+          checkFields(f.fields, val || {}, label);
+        }
+      });
+    };
+
+    checkFields(endpoint.bodyFields, bodyValues);
+    return errors;
+  };
+
   const handleSave = () => {
     const name = saveName.trim();
-    if (!name) return;
+    if (!name) {
+      setValidationErrors(['Please enter a name for this item']);
+      return;
+    }
+
+    const errors = validate();
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    setValidationErrors([]);
     const formData = { pathValues, queryValues, bodyValues };
 
     if (loadedItemId) {
@@ -58,6 +152,7 @@ export default function EndpointForm({ endpoint }) {
     setLoadedItemId(item.id);
     setSaveName(item.name);
     setShowSaveInput(false);
+    setValidationErrors([]);
   };
 
   const handleReset = () => {
@@ -65,6 +160,7 @@ export default function EndpointForm({ endpoint }) {
     setLoadedItemId(null);
     setSaveName('');
     setShowSaveInput(false);
+    setValidationErrors([]);
   };
 
   const handleLoadExample = () => {
@@ -76,6 +172,7 @@ export default function EndpointForm({ endpoint }) {
     setLoadedItemId(null);
     setSaveName('');
     setShowSaveInput(false);
+    setValidationErrors([]);
   };
 
   const hasExample = !!exampleData[endpoint.id];
@@ -95,6 +192,7 @@ export default function EndpointForm({ endpoint }) {
         name: bodyValues.name || '',
         description: bodyValues.description || '',
         icon: bodyValues.icon || '',
+        additionalDescriptions: bodyValues.additionalDescriptions || [],
       }
     : null;
 
@@ -104,6 +202,7 @@ export default function EndpointForm({ endpoint }) {
         productKey: bodyValues.productKey || '',
         name: bodyValues.name || '',
         icon: bodyValues.icon || '',
+        rank: bodyValues.rank,
         categories: bodyValues.categories || [],
         descriptions: bodyValues.descriptions || [],
         features: bodyValues.features || [],
@@ -251,6 +350,17 @@ export default function EndpointForm({ endpoint }) {
             </div>
           )}
 
+          {validationErrors.length > 0 && (
+            <div className="validation-errors">
+              <strong>⚠ Please fix the following before saving:</strong>
+              <ul>
+                {validationErrors.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="form-actions">
             <button type="button" className="btn-reset" onClick={handleReset}>
               Reset Form
@@ -294,6 +404,7 @@ export default function EndpointForm({ endpoint }) {
           {/* Saved Items */}
           <SavedItems
             endpointId={endpoint.id}
+            endpoint={endpoint}
             onLoad={handleLoad}
             refreshKey={savedRefreshKey}
           />
@@ -368,7 +479,18 @@ export default function EndpointForm({ endpoint }) {
             <div className="form-section">
               <h3 className="section-title">Request Body</h3>
               <p className="section-desc">The data that will be sent as JSON in the request</p>
-              <FieldRenderer fields={endpoint.bodyFields} values={bodyValues} onChange={setBodyValues} />
+              <FieldRenderer fields={endpoint.bodyFields} values={bodyValues} onChange={setBodyValues} endpointId={endpoint.id} editingItemId={loadedItemId} />
+            </div>
+          )}
+
+          {validationErrors.length > 0 && (
+            <div className="validation-errors">
+              <strong>⚠ Please fix the following before saving:</strong>
+              <ul>
+                {validationErrors.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
             </div>
           )}
 
@@ -396,7 +518,7 @@ export default function EndpointForm({ endpoint }) {
             {saveMsg && <span className="save-msg">{saveMsg}</span>}
           </div>
 
-          <SavedItems endpointId={endpoint.id} onLoad={handleLoad} refreshKey={savedRefreshKey} />
+          <SavedItems endpointId={endpoint.id} endpoint={endpoint} onLoad={handleLoad} refreshKey={savedRefreshKey} />
         </div>
       </>
     );

@@ -43,7 +43,7 @@ export default function PhonePreview({ mode, currentCategory, currentProduct }) 
     const cats = getSavedCategories();
     const cat = cats.find((c) => c.categoryKey === primaryCatKey);
     if (cat) {
-      setSelectedCategory({ key: cat.categoryKey, name: cat.name, description: cat.description || '', icon: cat.icon || '' });
+      setSelectedCategory({ key: cat.categoryKey, name: cat.name, description: cat.description || '', icon: cat.icon || '', additionalDescriptions: cat.additionalDescriptions || [] });
       setView('products');
     }
   }, [mode, primaryCatKey]);
@@ -61,6 +61,7 @@ export default function PhonePreview({ mode, currentCategory, currentProduct }) 
         name: cat.name,
         description: cat.description || '',
         icon: cat.icon || '',
+        additionalDescriptions: cat.additionalDescriptions || [],
       });
     }
   }
@@ -70,11 +71,12 @@ export default function PhonePreview({ mode, currentCategory, currentProduct }) 
     const curName = currentCategory?.name?.trim() || '';
     const curDesc = currentCategory?.description?.trim() || '';
     const curIcon = currentCategory?.icon?.trim() || '';
+    const curAddDesc = currentCategory?.additionalDescriptions || [];
 
     if (curName && catKey) {
-      categoryMap.set(catKey, { key: catKey, name: curName, description: curDesc, icon: curIcon, isCurrent: true });
+      categoryMap.set(catKey, { key: catKey, name: curName, description: curDesc, icon: curIcon, additionalDescriptions: curAddDesc, isCurrent: true });
     } else if (curName) {
-      categoryMap.set('__current__', { key: '__current__', name: curName, description: curDesc, icon: curIcon, isCurrent: true });
+      categoryMap.set('__current__', { key: '__current__', name: curName, description: curDesc, icon: curIcon, additionalDescriptions: curAddDesc, isCurrent: true });
     }
   }
 
@@ -95,6 +97,7 @@ export default function PhonePreview({ mode, currentCategory, currentProduct }) 
         productKey: prodKey || '__current_prod__',
         name: currentProduct.name.trim(),
         icon: currentProduct.icon?.trim() || '',
+        rank: typeof currentProduct.rank === 'number' ? currentProduct.rank : Infinity,
         categories: currentProduct.categories || [],
         descriptions: currentProduct.descriptions || [],
         features: currentProduct.features || [],
@@ -115,6 +118,9 @@ export default function PhonePreview({ mode, currentCategory, currentProduct }) 
       }
     }
 
+    // Sort by rank (lower rank = closer to top)
+    products.sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity));
+
     return products;
   }, [selectedCategory, savedProducts, mode, currentProduct, prodKey]);
 
@@ -131,7 +137,7 @@ export default function PhonePreview({ mode, currentCategory, currentProduct }) 
 
   const renderIcon = (item) => {
     if (item.icon) {
-      if (item.icon.startsWith('http')) return <img src={item.icon} alt="" className="ph-card-icon-img" />;
+      if (item.icon.startsWith('http') || item.icon.includes('/icons/')) return <img src={item.icon} alt="" className="ph-card-icon-img" />;
       return <span className="ph-card-icon-ref">{item.icon}</span>;
     }
     return <span className="ph-card-icon-letter">{iconInitial(item.name)}</span>;
@@ -273,7 +279,7 @@ function ProductListView({ category, products, onBack, onSelectProduct, renderIc
 
       <div className="ph-section-header">
         <span className="ph-section-title">{category?.name || 'Category'}</span>
-        <span className="ph-section-subtitle">Choose between these products</span>
+        <span className="ph-section-subtitle">{category?.additionalDescriptions?.[0]?.content || ''}</span>
       </div>
 
       <div className="ph-list ph-product-list">

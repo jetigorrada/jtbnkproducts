@@ -33,6 +33,77 @@ function cleanValue(val) {
   return val;
 }
 
+/**
+ * Build a clean body object guided by the field schema.
+ * Only includes keys that exist in the field definitions,
+ * so extra data from examples doesn't leak into the output.
+ */
+export function buildBodyFromSchema(fields, values) {
+  if (!fields || !values) return undefined;
+  const result = {};
+  let hasKeys = false;
+
+  for (const field of fields) {
+    const val = values[field.key];
+    if (val === undefined || val === null || val === '') continue;
+
+    if (field.type === 'translations' || field.type === 'key-value') {
+      // Free-form objects: clean but include as-is
+      // Strip internal UI-only keys (prefixed with __)
+      let raw = val;
+      if (field.type === 'key-value' && typeof val === 'object' && !Array.isArray(val)) {
+        raw = {};
+        for (const [k, v] of Object.entries(val)) {
+          if (!k.startsWith('__')) raw[k] = v;
+        }
+      }
+      const cleaned = cleanValue(raw);
+      if (cleaned !== undefined) {
+        result[field.key] = cleaned;
+        hasKeys = true;
+      }
+    } else if (field.type === 'array') {
+      if (!Array.isArray(val) || val.length === 0) continue;
+      if (field.itemType === 'simple') {
+        const cleaned = val.map((v) => (typeof v === 'string' ? v.trim() : v)).filter((v) => v !== '' && v !== undefined);
+        if (cleaned.length > 0) {
+          result[field.key] = cleaned;
+          hasKeys = true;
+        }
+      } else if (field.itemFields) {
+        const cleaned = val
+          .map((item) => buildBodyFromSchema(field.itemFields, item))
+          .filter((v) => v !== undefined);
+        if (cleaned.length > 0) {
+          result[field.key] = cleaned;
+          hasKeys = true;
+        }
+      }
+    } else if (field.type === 'category-picker') {
+      // Array of strings (category keys)
+      if (Array.isArray(val) && val.length > 0) {
+        result[field.key] = val;
+        hasKeys = true;
+      }
+    } else if (field.type === 'hierarchy') {
+      const cleaned = cleanValue(val);
+      if (cleaned !== undefined) {
+        result[field.key] = cleaned;
+        hasKeys = true;
+      }
+    } else {
+      // Scalar: text, number, datetime, icon, slider
+      const cleaned = cleanValue(val);
+      if (cleaned !== undefined) {
+        result[field.key] = cleaned;
+        hasKeys = true;
+      }
+    }
+  }
+
+  return hasKeys ? result : undefined;
+}
+
 export function useFormState(endpoint) {
   const [pathValues, setPathValues] = useState({});
   const [queryValues, setQueryValues] = useState({});
@@ -71,7 +142,7 @@ export function useFormState(endpoint) {
     const headers = { 'Content-Type': 'application/json' };
 
     const hasBody = endpoint.bodyFields && endpoint.bodyFields.length > 0 && method !== 'GET' && method !== 'DELETE';
-    const body = hasBody ? cleanValue(bodyValues) || {} : undefined;
+    const body = hasBody ? buildBodyFromSchema(endpoint.bodyFields, bodyValues) || {} : undefined;
 
     // cuRL command
     let curl = `curl -X ${method} '${url}'`;

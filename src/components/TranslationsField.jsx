@@ -1,19 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 /**
- * Translations field — fixed to English (en) and Albanian (sq).
- * Automatically shows inputs for all translatable sibling text fields.
+ * Translations field — fixed to English (en-US) and Albanian (sq).
+ * English is auto-populated from the main form fields (read-only).
+ * The user only needs to fill in Albanian translations.
  *
- * Data structure: { "en": { "name": "...", ... }, "sq": { "name": "...", ... } }
+ * Data structure: { "en-US": { "name": "...", ... }, "sq": { "name": "...", ... } }
  */
 
 const LOCALES = [
   { code: 'en-US', label: 'English', flag: '🇬🇧' },
-  { code: 'sq', label: 'Shqip', flag: '🇦🇱' },
+  { code: 'sq-AL', label: 'Shqip', flag: '🇦🇱' },
 ];
 
-export default function TranslationsField({ value = {}, onChange, translatableFields = [] }) {
-  const [activeTab, setActiveTab] = useState('en-US');
+export default function TranslationsField({ value = {}, onChange, translatableFields = [], siblingValues = {} }) {
+  // Auto-sync English values from sibling form fields
+  useEffect(() => {
+    if (translatableFields.length === 0) return;
+    const enObj = {};
+    let hasAny = false;
+    translatableFields.forEach((tf) => {
+      if (siblingValues[tf.key]) {
+        enObj[tf.key] = siblingValues[tf.key];
+        hasAny = true;
+      }
+    });
+    if (!hasAny) return;
+    // Only update if different from current English values
+    const currentEn = value['en-US'] || {};
+    const needsUpdate = translatableFields.some(
+      (tf) => (enObj[tf.key] || '') !== (currentEn[tf.key] || '')
+    );
+    if (needsUpdate) {
+      onChange({ ...value, 'en-US': { ...currentEn, ...enObj } });
+    }
+  }, [siblingValues]);
 
   const updateProp = (locale, propKey, propVal) => {
     const localeObj = { ...(value[locale] || {}) };
@@ -32,8 +53,11 @@ export default function TranslationsField({ value = {}, onChange, translatableFi
     onChange(next);
   };
 
+  const [activeTab, setActiveTab] = useState('sq-AL');
+
   const activeLocale = LOCALES.find((l) => l.code === activeTab);
   const localeValues = value[activeTab] || {};
+  const isEnglish = activeTab === 'en-US';
 
   // If no translatable fields detected, show a compact free-form fallback
   const hasFields = translatableFields.length > 0;
@@ -54,6 +78,7 @@ export default function TranslationsField({ value = {}, onChange, translatableFi
               <span className="trans-tab-flag">{loc.flag}</span>
               <span className="trans-tab-label">{loc.label}</span>
               {hasValues && <span className="trans-tab-dot" />}
+              {loc.code === 'en-US' && hasValues && <span className="trans-auto-badge">auto</span>}
             </button>
           );
         })}
@@ -61,20 +86,27 @@ export default function TranslationsField({ value = {}, onChange, translatableFi
 
       {/* Translation inputs */}
       <div className="trans-body">
+        {isEnglish && hasFields && (
+          <div className="trans-auto-notice">
+            ✓ English is auto-filled from the form fields above. Edit the main fields to update.
+          </div>
+        )}
         {hasFields ? (
           translatableFields.map((tf) => (
             <div key={tf.key} className="trans-row">
               <label className="trans-prop-label">
                 {tf.label}
                 {tf.multiline && <span className="trans-hint">(text)</span>}
+                {isEnglish && <span className="trans-hint">(auto)</span>}
               </label>
               {tf.multiline ? (
                 <textarea
                   value={localeValues[tf.key] || ''}
                   onChange={(e) => updateProp(activeTab, tf.key, e.target.value)}
                   placeholder={`${activeLocale.flag} ${tf.label} in ${activeLocale.label}`}
-                  className="field-input field-textarea trans-input"
+                  className={`field-input field-textarea trans-input${isEnglish ? ' trans-readonly' : ''}`}
                   rows={2}
+                  readOnly={isEnglish}
                 />
               ) : (
                 <input
@@ -82,7 +114,8 @@ export default function TranslationsField({ value = {}, onChange, translatableFi
                   value={localeValues[tf.key] || ''}
                   onChange={(e) => updateProp(activeTab, tf.key, e.target.value)}
                   placeholder={`${activeLocale.flag} ${tf.label} in ${activeLocale.label}`}
-                  className="field-input trans-input"
+                  className={`field-input trans-input${isEnglish ? ' trans-readonly' : ''}`}
+                  readOnly={isEnglish}
                 />
               )}
             </div>

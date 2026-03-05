@@ -14,6 +14,8 @@ const T = {
   TRANSLATIONS: 'translations',
   HIERARCHY: 'hierarchy',
   CATEGORY_PICKER: 'category-picker',
+  ICON: 'icon',
+  SLIDER: 'slider',
 };
 
 // ---------- Reusable sub-schemas ----------
@@ -35,9 +37,9 @@ const translationsField = {
 };
 
 const linkFields = [
-  { key: 'type', label: 'Type', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. PDF' },
+  { key: 'type', label: 'Type', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. PDF', translatable: false },
   { key: 'name', label: 'Name', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. Terms and Conditions' },
-  { key: 'url', label: 'URL', type: T.TEXT, required: true, placeholder: 'e.g. https://cdn.example.com/doc.pdf' },
+  { key: 'url', label: 'URL', type: T.TEXT, required: true, placeholder: 'e.g. https://cdn.example.com/doc.pdf', translatable: false },
   additionsField,
   translationsField,
 ];
@@ -50,7 +52,7 @@ const faqItemFields = [
 ];
 
 const descriptionFields = [
-  { key: 'type', label: 'Type', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. pricing_section_header' },
+  { key: 'type', label: 'Type', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. pricing_section_header', translatable: false },
   { key: 'content', label: 'Content', type: T.TEXT, required: true, minLength: 1, maxLength: 2000, placeholder: 'Description content', multiline: true },
   additionsField,
   translationsField,
@@ -59,14 +61,16 @@ const descriptionFields = [
 const featureFields = [
   { key: 'name', label: 'Name', type: T.TEXT, required: true, minLength: 1, maxLength: 100, placeholder: 'e.g. Surprise Benefit' },
   { key: 'description', label: 'Description', type: T.TEXT, required: false, minLength: 1, maxLength: 2000, placeholder: 'Feature description', multiline: true },
-  { key: 'type', label: 'Type', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. benefit' },
+  { key: 'type', label: 'Type', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. benefit', translatable: false },
   additionsField,
   translationsField,
 ];
 
+// NOTE: If adding multiple additional descriptions, they are not mapped to
+// each other — each one is independent and unordered in the API payload.
 const categoryAdditionalDescFields = [
   { key: 'content', label: 'Content', type: T.TEXT, required: true, minLength: 1, maxLength: 2000, placeholder: 'Additional description content', multiline: true },
-  { key: 'type', label: 'Type', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. tagline' },
+  { key: 'type', label: 'Type', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. tagline', translatable: false },
   translationsField,
 ];
 
@@ -83,14 +87,14 @@ export const endpoints = [
     pathParams: [],
     queryParams: [],
     bodyFields: [
-      { key: 'externalProductId', label: 'External Product ID', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. ext-id-001' },
-      { key: 'productKey', label: 'Product Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. mortgage-2025-05-fixed-term' },
-      { key: 'templateKey', label: 'Template Key', type: T.TEXT, required: false, maxLength: 255, placeholder: 'e.g. mortgages-fixed-term-view' },
+      { key: 'externalProductId', label: 'External Product ID', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. ext-id-001', translatable: false },
+      { key: 'productKey', label: 'Product Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. mortgage-2025-05-fixed-term', translatable: false },
+      { key: 'templateKey', label: 'Template Key', type: T.TEXT, required: false, maxLength: 255, placeholder: 'e.g. mortgages-fixed-term-view', translatable: false },
       { key: 'name', label: 'Product Name', type: T.TEXT, required: true, minLength: 1, maxLength: 150, placeholder: 'e.g. Fixed-Term Mortgage' },
       { key: 'availabilityStartDate', label: 'Availability Start Date', type: T.DATETIME, required: true, placeholder: '2025-06-01T00:00:00Z' },
-      { key: 'availabilityEndDate', label: 'Availability End Date', type: T.DATETIME, required: false, placeholder: '2025-12-01T23:59:59Z' },
-      { key: 'rank', label: 'Rank', type: T.NUMBER, required: false, description: 'Supports decimals (e.g. 11.05)' },
-      { key: 'icon', label: 'Icon', type: T.TEXT, required: false, maxLength: 2000, placeholder: 'e.g. product-icon-from-design-system' },
+      { key: 'availabilityEndDate', label: 'Availability End Date', type: T.DATETIME, required: false, placeholder: '2025-12-01T23:59:59Z', description: 'Leave empty if the product should remain available indefinitely.' },
+      { key: 'rank', label: 'Rank', type: T.SLIDER, required: false, min: 0, max: 50, step: 1, description: 'Controls the display order of products in this category. Lower rank = closer to the top of the list.' },
+      { key: 'icon', label: 'Icon', type: T.ICON, required: false, maxLength: 2000, placeholder: 'e.g. product-icon-from-design-system', description: 'Select one of the built-in icons from the library, or provide a URL for the icon you want to use.' },
       {
         key: 'categories',
         label: 'Categories',
@@ -135,6 +139,7 @@ export const endpoints = [
             type: T.ARRAY,
             required: true,
             minItems: 1,
+            maxItems: 5,
             itemType: 'object',
             itemLabel: 'FAQ Item',
             itemFields: faqItemFields,
@@ -155,12 +160,25 @@ export const endpoints = [
         label: 'Features',
         type: T.ARRAY,
         required: true,
+        maxItems: 3,
         itemType: 'object',
         itemLabel: 'Feature',
         itemFields: featureFields,
       },
       translationsField,
-      additionsField,
+      {
+        key: 'additions',
+        label: 'Additions',
+        type: T.KEY_VALUE,
+        description: 'Additional properties (key-value pairs). Currency is required.',
+        required: false,
+        pinnedKeys: [
+          { key: 'CCY', label: 'Currency', options: ['EUR', 'ALL', 'USD'], required: true },
+          { key: '__loanOrCard', label: 'Is this a Loan or Credit Card?', type: 'yesno', required: true },
+          { key: 'Max Limit', label: 'Max Limit', inputType: 'number', required: true, showWhen: '__loanOrCard', placeholder: 'e.g. 50000' },
+          { key: 'Min Limit', label: 'Min Limit', inputType: 'number', required: true, showWhen: '__loanOrCard', placeholder: 'e.g. 1000' },
+        ],
+      },
     ],
   },
   {
@@ -177,7 +195,7 @@ export const endpoints = [
     bodyFields: [
       { key: 'availabilityStartDate', label: 'Availability Start Date', type: T.DATETIME, required: false, placeholder: '2025-06-01T00:00:00Z' },
       { key: 'availabilityEndDate', label: 'Availability End Date', type: T.DATETIME, required: false, placeholder: '2025-12-01T23:59:59Z' },
-      { key: 'rank', label: 'Rank', type: T.NUMBER, required: false, description: 'Supports decimals (e.g. 11.05)' },
+      { key: 'rank', label: 'Rank', type: T.SLIDER, required: false, min: 0, max: 50, step: 1, description: 'Controls the display order of products in this category. Lower rank = closer to the top of the list.' },
     ],
   },
   {
@@ -202,14 +220,14 @@ export const endpoints = [
     tag: 'Categories',
     summary: 'Upsert a category',
     pathParams: [
-      { key: 'categoryKey', label: 'Category Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. cards' },
+      { key: 'categoryKey', label: 'Category Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. cards', description: 'Machine-readable identifier for the category. Use lowercase kebab-case (e.g. savings-accounts, credit-cards). Must be unique and consistent across updates.' },
     ],
     queryParams: [],
     bodyFields: [
-      { key: 'externalCategoryId', label: 'External Category ID', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. ext-id-001' },
-      { key: 'name', label: 'Category Name', type: T.TEXT, required: true, minLength: 1, maxLength: 50, placeholder: 'e.g. Accounts' },
-      { key: 'description', label: 'Description', type: T.TEXT, required: false, minLength: 1, maxLength: 500, placeholder: 'e.g. Flexible, secure, and easy everyday banking.' },
-      { key: 'icon', label: 'Icon', type: T.TEXT, required: false, maxLength: 2000, placeholder: 'Icon reference or URL' },
+      { key: 'externalCategoryId', label: 'External Category ID', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. ext-id-001', translatable: false, description: 'Identifier used to map this category across systems (e.g. the category ID in Flexcube corresponds to this category in the app).' },
+      { key: 'name', label: 'Category Name', type: T.TEXT, required: true, minLength: 1, maxLength: 50, placeholder: 'e.g. Accounts', description: 'Displayed as-is on the app frontend.' },
+      { key: 'description', label: 'Description', type: T.TEXT, required: false, minLength: 1, maxLength: 500, placeholder: 'e.g. Flexible, secure, and easy everyday banking.', description: 'Displayed as-is on the app frontend below the category name.' },
+      { key: 'icon', label: 'Icon', type: T.ICON, required: false, maxLength: 2000, placeholder: 'Icon reference or URL', description: 'Select one of the built-in icons from the library, or provide a URL for the icon you want to use.' },
       {
         key: 'additionalDescriptions',
         label: 'Additional Descriptions',
@@ -218,6 +236,7 @@ export const endpoints = [
         itemType: 'object',
         itemLabel: 'Additional Description',
         itemFields: categoryAdditionalDescFields,
+        description: 'Only the first description is displayed in the app. Additional entries are stored for future use.',
       },
       translationsField,
       additionsField,
@@ -231,7 +250,7 @@ export const endpoints = [
     tag: 'Categories',
     summary: 'Delete a category',
     pathParams: [
-      { key: 'categoryKey', label: 'Category Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. cards' },
+      { key: 'categoryKey', label: 'Category Key', type: T.TEXT, required: true, minLength: 1, maxLength: 255, placeholder: 'e.g. cards', description: 'Machine-readable identifier for the category. Use lowercase kebab-case (e.g. savings-accounts, credit-cards).' },
     ],
     queryParams: [],
     bodyFields: [],

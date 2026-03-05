@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import TranslationsField from './TranslationsField';
 import KeyValueField from './KeyValueField';
 import HierarchyField from './HierarchyField';
 import CategoryPicker from './CategoryPicker';
+import IconPicker from './IconPicker';
+import { getItems } from '../storage';
 
 /**
  * Recursively renders form fields based on field schema definitions.
  * Handles: text, number, datetime, array (simple & object), key-value, translations, hierarchy
  */
-export default function FieldRenderer({ fields, values, onChange }) {
+export default function FieldRenderer({ fields, values, onChange, endpointId, editingItemId }) {
   const updateField = (key, val) => {
     onChange({ ...values, [key]: val });
   };
@@ -22,13 +24,16 @@ export default function FieldRenderer({ fields, values, onChange }) {
           value={values[field.key]}
           onChange={(val) => updateField(field.key, val)}
           allFields={fields}
+          allValues={values}
+          endpointId={endpointId}
+          editingItemId={editingItemId}
         />
       ))}
     </div>
   );
 }
 
-function FieldItem({ field, value, onChange, allFields }) {
+function FieldItem({ field, value, onChange, allFields, allValues, endpointId, editingItemId }) {
   const { key, label, type, required, placeholder, description, maxLength, multiline, min, max, minLength, minItems } = field;
 
   // Compose constraint info in a user-friendly way
@@ -45,8 +50,10 @@ function FieldItem({ field, value, onChange, allFields }) {
     <label className="field-label">
       <span>{label}</span>
       {required && <span className="required-star">*</span>}
-      {description && <span className="field-desc">{description}</span>}
-      {constraintText && <span className="field-constraints">{constraintText}</span>}
+      {!required && <span className="optional-tag">(optional)</span>}
+      {(description || constraintText) && (
+        <HelpTip description={description} constraints={constraintText} />
+      )}
     </label>
   );
 
@@ -100,6 +107,68 @@ function FieldItem({ field, value, onChange, allFields }) {
           step="any"
           className="field-input"
         />
+      </div>
+    );
+  }
+
+  // Slider input (segmented rank bar) — shows taken ranks from saved products
+  if (type === 'slider') {
+    const sliderMin = field.min ?? 0;
+    const sliderMax = field.max ?? 50;
+    const current = value ?? sliderMin;
+
+    // Collect ranks already used by other saved products
+    const takenMap = new Map(); // rank -> product name
+    if (endpointId) {
+      try {
+        const saved = getItems(endpointId) || [];
+        saved.forEach((item) => {
+          if (editingItemId && item.id === editingItemId) return;
+          const r = item.data?.bodyValues?.rank;
+          if (typeof r === 'number') {
+            takenMap.set(r, item.name);
+          }
+        });
+      } catch { /* storage unavailable */ }
+    }
+
+    const cells = [];
+    for (let i = sliderMin; i < sliderMax; i++) {
+      const isTaken = takenMap.has(i);
+      const isSelected = i === current;
+      let cls = 'rank-cell';
+      if (isSelected) cls += ' rank-cell-selected';
+      else if (isTaken) cls += ' rank-cell-taken';
+      else cls += ' rank-cell-free';
+
+      cells.push(
+        <button
+          key={i}
+          type="button"
+          className={cls}
+          onClick={() => { if (!isTaken) onChange(i); }}
+          disabled={isTaken}
+          title={isTaken ? `Rank ${i} — ${takenMap.get(i)}` : `Rank ${i}`}
+        >
+          <span className="rank-cell-num">{i}</span>
+          {isTaken && <span className="rank-cell-tooltip">{takenMap.get(i)}</span>}
+        </button>
+      );
+    }
+
+    return (
+      <div className="field-group">
+        {renderLabel()}
+        <div className="rank-bar-wrapper">
+          <div className="rank-bar">
+            {cells}
+          </div>
+        </div>
+        <div className="rank-bar-legend">
+          <span className="rank-legend-item"><span className="rank-swatch rank-swatch-free"></span> Available</span>
+          <span className="rank-legend-item"><span className="rank-swatch rank-swatch-taken"></span> Taken</span>
+          <span className="rank-legend-item"><span className="rank-swatch rank-swatch-selected"></span> Selected ({current})</span>
+        </div>
       </div>
     );
   }
@@ -164,19 +233,24 @@ function FieldItem({ field, value, onChange, allFields }) {
 
   // Key-value (additions) — collapsible, closed by default
   if (type === 'key-value') {
-    return <CollapsibleKeyValue label={label} description={description} value={value} onChange={onChange} />;
+    return <CollapsibleKeyValue label={label} description={description} value={value} onChange={onChange} pinnedKeys={field.pinnedKeys} />;
   }
 
   // Translations
   if (type === 'translations') {
     // Extract sibling text fields as translatable properties
     const translatableFields = (allFields || [])
-      .filter((f) => f.key !== key && f.type === 'text')
+      .filter((f) => f.key !== key && f.type === 'text' && f.translatable !== false)
       .map((f) => ({ key: f.key, label: f.label, multiline: !!f.multiline }));
+    // Collect current sibling values for English auto-fill
+    const siblingValues = {};
+    translatableFields.forEach((tf) => {
+      if (allValues && allValues[tf.key]) siblingValues[tf.key] = allValues[tf.key];
+    });
     return (
       <div className="field-group">
         {renderLabel()}
-        <TranslationsField value={value || {}} onChange={onChange} translatableFields={translatableFields} />
+        <TranslationsField value={value || {}} onChange={onChange} translatableFields={translatableFields} siblingValues={siblingValues} />
       </div>
     );
   }
@@ -187,6 +261,16 @@ function FieldItem({ field, value, onChange, allFields }) {
       <div className="field-group">
         {renderLabel()}
         <CategoryPicker value={value || []} onChange={onChange} />
+      </div>
+    );
+  }
+
+  // Icon picker (URL or icon library)
+  if (type === 'icon') {
+    return (
+      <div className="field-group">
+        {renderLabel()}
+        <IconPicker value={value || ''} onChange={onChange} />
       </div>
     );
   }
@@ -214,10 +298,46 @@ function FieldItem({ field, value, onChange, allFields }) {
   return null;
 }
 
+/** Clickable ? icon that shows a popup with field description and constraints */
+function HelpTip({ description, constraints }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  return (
+    <span className="help-tip-wrapper" ref={ref}>
+      <button
+        type="button"
+        className={`help-tip-btn${open ? ' active' : ''}`}
+        onClick={(e) => { e.preventDefault(); setOpen((o) => !o); }}
+        aria-label="More info"
+      >
+        ?
+      </button>
+      {open && (
+        <div className="help-tip-popup">
+          {description && <div className="help-tip-desc">{description}</div>}
+          {constraints && <div className="help-tip-constraints">{constraints}</div>}
+        </div>
+      )}
+    </span>
+  );
+}
+
 function ArrayFieldRenderer({ field, value, onChange }) {
-  const { itemType, itemField, itemFields, itemLabel, minItems } = field;
+  const { itemType, itemField, itemFields, itemLabel, minItems, maxItems } = field;
+  const atMax = maxItems != null && value.length >= maxItems;
 
   const addItem = () => {
+    if (atMax) return;
     if (itemType === 'simple') {
       onChange([...value, '']);
     } else {
@@ -254,9 +374,12 @@ function ArrayFieldRenderer({ field, value, onChange }) {
             </button>
           </div>
         ))}
-        <button type="button" className="btn-add" onClick={addItem}>
-          + Add {itemField?.label || 'Item'}
-        </button>
+        {!atMax && (
+          <button type="button" className="btn-add" onClick={addItem}>
+            + Add {itemField?.label || 'Item'}
+          </button>
+        )}
+        {atMax && <span className="array-max-msg">Maximum of {maxItems} reached</span>}
       </div>
     );
   }
@@ -279,17 +402,21 @@ function ArrayFieldRenderer({ field, value, onChange }) {
           />
         </div>
       ))}
-      <button type="button" className="btn-add" onClick={addItem}>
-        + Add {itemLabel || 'Item'}
-      </button>
+      {!atMax && (
+        <button type="button" className="btn-add" onClick={addItem}>
+          + Add {itemLabel || 'Item'}
+        </button>
+      )}
+      {atMax && <span className="array-max-msg">Maximum of {maxItems} reached</span>}
     </div>
   );
 }
 
 /** Collapsible wrapper for Additions (key-value) — hidden by default */
-function CollapsibleKeyValue({ label, description, value, onChange }) {
+function CollapsibleKeyValue({ label, description, value, onChange, pinnedKeys }) {
   const hasValues = value && Object.keys(value).length > 0;
-  const [open, setOpen] = useState(hasValues);
+  const hasPinned = pinnedKeys && pinnedKeys.length > 0;
+  const [open, setOpen] = useState(hasValues || hasPinned);
 
   return (
     <div className="field-group additions-toggle-group">
@@ -307,7 +434,7 @@ function CollapsibleKeyValue({ label, description, value, onChange }) {
       </button>
       {open && (
         <div className="additions-content">
-          <KeyValueField value={value || {}} onChange={onChange} />
+          <KeyValueField value={value || {}} onChange={onChange} pinnedKeys={pinnedKeys} />
         </div>
       )}
     </div>
