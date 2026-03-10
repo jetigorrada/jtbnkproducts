@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 /**
  * Translations field — fixed to English (en-US) and Albanian (sq).
@@ -14,9 +14,20 @@ const LOCALES = [
 ];
 
 export default function TranslationsField({ value = {}, onChange, translatableFields = [], siblingValues = {} }) {
+  // Build a stable fingerprint of the translatable sibling values
+  const siblingFingerprint = translatableFields
+    .map((tf) => `${tf.key}=${siblingValues[tf.key] || ''}`)
+    .join('|');
+
+  const prevFingerprint = useRef(siblingFingerprint);
+
   // Auto-sync English values from sibling form fields
   useEffect(() => {
     if (translatableFields.length === 0) return;
+    // Only run when translatable sibling values actually changed
+    if (siblingFingerprint === prevFingerprint.current) return;
+    prevFingerprint.current = siblingFingerprint;
+
     const enObj = {};
     let hasAny = false;
     translatableFields.forEach((tf) => {
@@ -34,7 +45,7 @@ export default function TranslationsField({ value = {}, onChange, translatableFi
     if (needsUpdate) {
       onChange({ ...value, 'en-US': { ...currentEn, ...enObj } });
     }
-  }, [siblingValues]);
+  }, [siblingFingerprint]);
 
   const updateProp = (locale, propKey, propVal) => {
     const localeObj = { ...(value[locale] || {}) };
