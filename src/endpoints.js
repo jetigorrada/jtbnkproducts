@@ -93,7 +93,7 @@ export const endpoints = [
       { key: 'name', label: 'Product Name', type: T.TEXT, required: true, minLength: 1, maxLength: 150, placeholder: 'e.g. Fixed-Term Mortgage' },
       { key: 'availabilityStartDate', label: 'Availability Start Date', type: T.DATETIME, required: true, placeholder: '2025-06-01T00:00:00Z' },
       { key: 'availabilityEndDate', label: 'Availability End Date', type: T.DATETIME, required: false, placeholder: '2025-12-01T23:59:59Z', description: 'Leave empty if the product should remain available indefinitely.' },
-      { key: 'rank', label: 'Rank', type: T.SLIDER, required: false, min: 0, max: 50, step: 1, description: 'Controls the display order of products in this category. Lower rank = closer to the top of the list.' },
+      { key: 'rank', label: 'Rank', type: T.SLIDER, required: false, min: 0, max: 20, step: 1, description: 'Controls the display order of products in this category. Lower rank = closer to the top of the list.' },
       { key: 'icon', label: 'Icon', type: T.ICON, required: false, maxLength: 2000, placeholder: 'e.g. product-icon-from-design-system', description: 'Select one of the built-in icons from the library, or provide a URL for the icon you want to use.' },
       {
         key: 'categories',
@@ -195,7 +195,7 @@ export const endpoints = [
     bodyFields: [
       { key: 'availabilityStartDate', label: 'Availability Start Date', type: T.DATETIME, required: false, placeholder: '2025-06-01T00:00:00Z' },
       { key: 'availabilityEndDate', label: 'Availability End Date', type: T.DATETIME, required: false, placeholder: '2025-12-01T23:59:59Z' },
-      { key: 'rank', label: 'Rank', type: T.SLIDER, required: false, min: 0, max: 50, step: 1, description: 'Controls the display order of products in this category. Lower rank = closer to the top of the list.' },
+      { key: 'rank', label: 'Rank', type: T.SLIDER, required: false, min: 0, max: 20, step: 1, description: 'Controls the display order of products in this category. Lower rank = closer to the top of the list.' },
     ],
   },
   {

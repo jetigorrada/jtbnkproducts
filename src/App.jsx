@@ -72,7 +72,7 @@ function App() {
 
         <div className="sidebar-footer">
           <div className="sidebar-disclaimer">
-            Built by <strong>Igor Rada</strong>
+            Idea by <strong>Ardian Hasa</strong> · Built by <strong>Igor Rada</strong>
           </div>
           <a className="feedback-btn" href="mailto:igor.rada@jet-bank.com?subject=Product%20Directory%20Feedback">
             ✉ Send Feedback
