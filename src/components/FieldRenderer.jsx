@@ -117,15 +117,22 @@ function FieldItem({ field, value, onChange, allFields, allValues, endpointId, e
     const sliderMax = field.max ?? 50;
     const current = value ?? sliderMin;
 
-    // Collect ranks already used by other saved products
+    // Collect ranks already used by other saved products in the SAME category
     const takenMap = new Map(); // rank -> product name
     if (endpointId) {
       try {
+        // Get the currently selected categories for this product
+        const selectedCategories = allValues?.categories || [];
         const saved = getItems(endpointId) || [];
         saved.forEach((item) => {
           if (editingItemId && item.id === editingItemId) return;
           const r = item.data?.bodyValues?.rank;
-          if (typeof r === 'number') {
+          if (typeof r !== 'number') return;
+          // Only mark as taken if the saved product shares at least one category
+          const itemCats = item.data?.bodyValues?.categories || [];
+          const overlaps = selectedCategories.length === 0 ||
+            itemCats.some((c) => selectedCategories.includes(c));
+          if (overlaps) {
             takenMap.set(r, item.name);
           }
         });
