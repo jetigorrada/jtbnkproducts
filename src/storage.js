@@ -113,7 +113,71 @@ export function exportToFile() {
 }
 
 /**
- * Import saved items from a JSON file (merges with existing)
+ * Export a single saved item as a JSON file download
+ */
+export function exportSingleItemToFile(endpointId, itemId) {
+  const items = getAll();
+  const bucket = bucketFor(endpointId);
+  const item = items[bucket].find((i) => i.id === itemId);
+  if (!item) return;
+  const blob = new Blob([JSON.stringify(item, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = item.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+  a.download = `${bucket.slice(0, -1)}_${safeName}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Detect if a JSON object is an API-output-format product, category, or hierarchy
+ * and convert it to an internal saved-item format.
+ * Returns the converted item or null if not recognized.
+ */
+function convertApiFormatToSavedItem(obj) {
+  // Product API format: has productKey and name (but no endpointId)
+  if (obj.productKey && obj.name && !obj.endpointId) {
+    return {
+      id: crypto.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2),
+      name: obj.name,
+      endpointId: 'createProduct',
+      timestamp: new Date().toISOString(),
+      data: {
+        pathValues: {},
+        queryValues: {},
+        bodyValues: { ...obj },
+      },
+    };
+  }
+
+  // Category API format: has externalCategoryId and name
+  if (obj.externalCategoryId && obj.name && !obj.endpointId) {
+    const categoryKey = obj.categoryKey || obj.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    return {
+      id: crypto.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2),
+      name: obj.name,
+      endpointId: 'upsertCategory',
+      timestamp: new Date().toISOString(),
+      data: {
+        pathValues: { categoryKey },
+        queryValues: {},
+        bodyValues: { ...obj },
+      },
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Import saved items from a JSON file (merges with existing).
+ * Accepts:
+ *   - Bulk format: { products: [...], categories: [...], hierarchies: [...] }
+ *   - Single internal item format: { id, name, endpointId, data, ... }
+ *   - API output format: { productKey, name, ... } or { externalCategoryId, name, ... }
  */
 export function importFromFile(file) {
   return new Promise((resolve, reject) => {
@@ -123,7 +187,33 @@ export function importFromFile(file) {
         const imported = JSON.parse(e.target.result);
         const current = getAll();
 
-        // Merge: add imported items that don't already exist (by id)
+        // Detect single internal item format: has id, endpointId, and data
+        if (imported.id && imported.endpointId && imported.data) {
+          const bucket = bucketFor(imported.endpointId);
+          const existingIds = new Set(current[bucket].map((i) => i.id));
+          if (!existingIds.has(imported.id)) {
+            current[bucket].push(imported);
+          } else {
+            // Update existing item with same id
+            const idx = current[bucket].findIndex((i) => i.id === imported.id);
+            if (idx !== -1) current[bucket][idx] = imported;
+          }
+          saveAll(current);
+          resolve(current);
+          return;
+        }
+
+        // Detect API output format (e.g. downloaded JSON body)
+        const converted = convertApiFormatToSavedItem(imported);
+        if (converted) {
+          const bucket = bucketFor(converted.endpointId);
+          current[bucket].push(converted);
+          saveAll(current);
+          resolve(current);
+          return;
+        }
+
+        // Bulk format: merge items that don't already exist (by id)
         for (const bucket of ['products', 'categories', 'hierarchies']) {
           if (imported[bucket] && Array.isArray(imported[bucket])) {
             const existingIds = new Set(current[bucket].map((i) => i.id));

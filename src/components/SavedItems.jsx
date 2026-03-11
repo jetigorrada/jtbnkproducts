@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { getItems, deleteItem, exportToFile, importFromFile, getAllItems } from '../storage';
+import { getItems, deleteItem, exportToFile, importFromFile, exportSingleItemToFile, getAllItems } from '../storage';
 import { buildBodyFromSchema } from '../hooks/useFormState';
 
 /**
@@ -37,6 +37,7 @@ export default function SavedItems({ endpointId, endpoint, onLoad, refreshKey })
   const [importMsg, setImportMsg] = useState(null);
   const [copyMsg, setCopyMsg] = useState(null);       // { itemId, text }
   const fileInputRef = useRef(null);
+  const singleFileInputRef = useRef(null);
 
   // Refresh items when refreshKey changes (after save)
   const [lastKey, setLastKey] = useState(refreshKey);
@@ -67,6 +68,24 @@ export default function SavedItems({ endpointId, endpoint, onLoad, refreshKey })
     setTimeout(() => setImportMsg(null), 3000);
     // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleImportSingle = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      await importFromFile(file);
+      setItems(getItems(endpointId));
+      setImportMsg({ type: 'success', text: 'Item imported successfully!' });
+    } catch (err) {
+      setImportMsg({ type: 'error', text: err.message });
+    }
+    setTimeout(() => setImportMsg(null), 3000);
+    if (singleFileInputRef.current) singleFileInputRef.current.value = '';
+  };
+
+  const handleExportItem = (item) => {
+    exportSingleItemToFile(endpointId, item.id);
   };
 
   const getItemJson = (item) => {
@@ -133,8 +152,11 @@ export default function SavedItems({ endpointId, endpoint, onLoad, refreshKey })
           <button className="btn-file-action" onClick={handleExport} title="Export all saved items to JSON file">
             ↓ Export
           </button>
-          <button className="btn-file-action" onClick={() => fileInputRef.current?.click()} title="Import saved items from JSON file">
-            ↑ Import
+          <button className="btn-file-action" onClick={() => fileInputRef.current?.click()} title="Import saved items from JSON file (bulk or single)">
+            ↑ Import All
+          </button>
+          <button className="btn-file-action" onClick={() => singleFileInputRef.current?.click()} title="Import a single saved item from JSON file">
+            ↑ Import Item
           </button>
           <input
             ref={fileInputRef}
@@ -142,6 +164,13 @@ export default function SavedItems({ endpointId, endpoint, onLoad, refreshKey })
             accept=".json"
             style={{ display: 'none' }}
             onChange={handleImport}
+          />
+          <input
+            ref={singleFileInputRef}
+            type="file"
+            accept=".json"
+            style={{ display: 'none' }}
+            onChange={handleImportSingle}
           />
         </div>
       </div>
@@ -178,6 +207,13 @@ export default function SavedItems({ endpointId, endpoint, onLoad, refreshKey })
                   title="Download API JSON as file"
                 >
                   ↓ Download JSON
+                </button>
+                <button
+                  className="btn-json-action"
+                  onClick={() => handleExportItem(item)}
+                  title="Export this item (re-importable)"
+                >
+                  ↓ Export
                 </button>
                 <button
                   className="btn-load"
