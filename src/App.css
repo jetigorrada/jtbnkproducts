@@ -651,6 +651,117 @@
   padding: 4px 0;
 }
 
+/* ── Descriptions preset slots ── */
+.desc-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.desc-preset-slot {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+.desc-preset-slot.desc-preset-unconfirmed {
+  border-style: dashed;
+  opacity: 0.85;
+}
+.desc-preset-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.desc-preset-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.desc-preset-type {
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.desc-preset-input {
+  width: 100%;
+}
+textarea.desc-preset-input {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* Description translation row (Albanian input under each preset) */
+.desc-trans-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 4px;
+}
+.desc-trans-flag {
+  font-size: 15px;
+  line-height: 34px;
+  flex-shrink: 0;
+  user-select: none;
+}
+.desc-trans-input {
+  flex: 1;
+  font-size: 12.5px;
+  border: 1px dashed var(--border);
+  background: var(--bg-secondary);
+}
+.desc-trans-input::placeholder {
+  font-style: italic;
+  opacity: 0.6;
+}
+textarea.desc-trans-input {
+  resize: vertical;
+  min-height: 44px;
+}
+
+.desc-unconfirmed-section {
+  margin-top: 4px;
+}
+.desc-unconfirmed-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.15s;
+}
+.desc-unconfirmed-toggle:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-secondary);
+}
+.desc-unconfirmed-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  padding: 1px 8px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+.desc-unconfirmed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding-left: 8px;
+  border-left: 3px dashed rgba(245, 158, 11, 0.3);
+}
+
 .btn-add-sm {
   padding: 5px 12px;
   background: var(--accent-dim);
@@ -2303,6 +2414,8 @@
   color: #111;
   margin-bottom: 12px;
   cursor: default;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .ph-product-btn {
   background: #111;

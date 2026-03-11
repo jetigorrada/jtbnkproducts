@@ -126,6 +126,12 @@ export default function PhonePreview({ mode, currentCategory, currentProduct }) 
 
   const categoryProducts = view !== 'categories' ? buildProductList() : [];
 
+  // Keep the detail-view product in sync with live form edits
+  // (selectedProduct is a snapshot from click-time; look up the live version instead)
+  const liveDetailProduct = (view === 'detail' && selectedProduct)
+    ? (categoryProducts.find((p) => p.productKey === selectedProduct.productKey) || selectedProduct)
+    : selectedProduct;
+
   // ── Helpers ──
   const tealShade = (str) => {
     let h = 0;
@@ -195,7 +201,7 @@ export default function PhonePreview({ mode, currentCategory, currentProduct }) 
 
         {view === 'detail' && (
           <ProductDetailView
-            product={selectedProduct}
+            product={liveDetailProduct}
             categoryName={selectedCategory?.name || 'Category'}
             openFaqIdx={openFaqIdx}
             setOpenFaqIdx={setOpenFaqIdx}
@@ -274,7 +280,7 @@ function ProductListView({ category, products, onBack, onSelectProduct, renderIc
       </div>
 
       <div className="ph-page-title ph-page-title-sm">
-        Select the product you are interested in
+        {category?.description || `Select the product you are interested in`}
       </div>
 
       <div className="ph-section-header">
@@ -300,9 +306,10 @@ function ProductListView({ category, products, onBack, onSelectProduct, renderIc
               </div>
               <span className="ph-product-name">{product.name}</span>
             </div>
-            {product.descriptions?.[0]?.content && (
-              <p className="ph-product-desc">{product.descriptions[0].content}</p>
-            )}
+            {(() => {
+              const shortDesc = product.descriptions?.find((d) => d.type === 'shortDescription');
+              return shortDesc?.content ? <p className="ph-product-desc">{shortDesc.content}</p> : null;
+            })()}
             <span
               className="ph-product-more"
               onClick={() => onSelectProduct(product)}
@@ -325,8 +332,11 @@ function ProductListView({ category, products, onBack, onSelectProduct, renderIc
 function ProductDetailView({ product, categoryName, openFaqIdx, setOpenFaqIdx, onBack, renderIcon, tealShade }) {
   if (!product) return null;
 
-  const mainDesc = product.descriptions?.find((d) => d.type !== 'pricing_section_header');
-  const subDesc = product.descriptions?.find((d) => d.type === 'pricing_section_header');
+  const shortDesc = product.descriptions?.find((d) => d.type === 'shortDescription');
+  const headlinePrice = product.descriptions?.find((d) => d.type === 'headlinePrice');
+  const priceCompliance = product.descriptions?.find((d) => d.type === 'priceCompliance');
+  const longDesc = product.descriptions?.find((d) => d.type === 'longDescription');
+  const faqHeading = product.descriptions?.find((d) => d.type === 'faqHeading');
   const allFaqItems = (product.faqs || []).flatMap((faq) => faq.faqItems || []);
   const allLinks = (product.linkGroups || []).flatMap((lg) => lg.links || []);
   const features = product.features || [];
@@ -346,12 +356,12 @@ function ProductDetailView({ product, categoryName, openFaqIdx, setOpenFaqIdx, o
           </div>
           <div className="ph-detail-header-text">
             <span className="ph-detail-name">{product.name}</span>
-            {subDesc && <span className="ph-detail-subtitle">{subDesc.content}</span>}
+            {headlinePrice?.content && <span className="ph-detail-subtitle">{headlinePrice.content}</span>}
           </div>
         </div>
 
-        {/* Main description */}
-        {mainDesc && <p className="ph-detail-desc">{mainDesc.content}</p>}
+        {/* Price compliance */}
+        {priceCompliance?.content && <p className="ph-detail-desc">{priceCompliance.content}</p>}
 
         {/* Features */}
         {features.length > 0 && (
@@ -375,8 +385,9 @@ function ProductDetailView({ product, categoryName, openFaqIdx, setOpenFaqIdx, o
             {allLinks.map((link, i) => (
               <div key={i} className="ph-link-row">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M5 1h6a4 4 0 010 8H5" stroke="#111" strokeWidth="1.5" strokeLinecap="round"/>
-                  <path d="M3 4l-2 4 2 4" stroke="#111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M6 2h8v8" stroke="#111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M14 2L6 10" stroke="#111" strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M10 2H3a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1V9" stroke="#111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <span className="ph-link-text">{link.name}</span>
               </div>
@@ -388,7 +399,7 @@ function ProductDetailView({ product, categoryName, openFaqIdx, setOpenFaqIdx, o
         {/* FAQ */}
         {allFaqItems.length > 0 && (
           <div className="ph-detail-faq">
-            <h3 className="ph-faq-title">FAQ</h3>
+            <h3 className="ph-faq-title">{faqHeading?.content || 'FAQ'}</h3>
             {allFaqItems.map((item, i) => (
               <div key={i} className="ph-faq-item">
                 <div className="ph-faq-question" onClick={() => setOpenFaqIdx(openFaqIdx === i ? null : i)}>
@@ -397,7 +408,7 @@ function ProductDetailView({ product, categoryName, openFaqIdx, setOpenFaqIdx, o
                     className={`ph-faq-chevron${openFaqIdx === i ? ' ph-faq-open' : ''}`}
                     width="14" height="8" viewBox="0 0 14 8" fill="none"
                   >
-                    <path d="M1 1l6 6 6-6" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M1 1l6 6 6-6" stroke={openFaqIdx === i ? '#009688' : '#111'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
                 {openFaqIdx === i && <p className="ph-faq-answer">{item.answer}</p>}

@@ -64,15 +64,30 @@ export const exampleData = {
       ],
       descriptions: [
         {
-          type: 'pricing_section_header',
-          content: 'This is the best product.',
+          type: 'shortDescription',
+          content: 'Boost your savings with a competitive fixed-term deposit.',
+          additions: {},
           translations: {
-            'en-US': {
-              content: 'This is the best product.',
-            },
-            'sq-AL': {
-              content: 'Ky eshte produkti me i mire.',
-            },
+            'en-US': { content: 'Boost your savings with a competitive fixed-term deposit.' },
+            'sq-AL': { content: 'Rritni kursimet tuaja me një depozitë konkurruese me afat të caktuar.' },
+          },
+        },
+        {
+          type: 'headlinePrice',
+          content: 'yearly up to 6% interest rate',
+          additions: {},
+          translations: {
+            'en-US': { content: 'yearly up to 6% interest rate' },
+            'sq-AL': { content: 'deri në 6% normë interesi vjetore' },
+          },
+        },
+        {
+          type: 'priceCompliance',
+          content: 'Get a fixed return for your chosen term.',
+          additions: {},
+          translations: {
+            'en-US': { content: 'Get a fixed return for your chosen term.' },
+            'sq-AL': { content: 'Merrni një kthim fiks për afatin e zgjedhur.' },
           },
         },
       ],

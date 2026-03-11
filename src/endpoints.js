@@ -16,6 +16,7 @@ const T = {
   CATEGORY_PICKER: 'category-picker',
   ICON: 'icon',
   SLIDER: 'slider',
+  DESCRIPTIONS: 'descriptions',
 };
 
 // ---------- Reusable sub-schemas ----------
@@ -56,6 +57,17 @@ const descriptionFields = [
   { key: 'content', label: 'Content', type: T.TEXT, required: true, minLength: 1, maxLength: 2000, placeholder: 'Description content', multiline: true },
   additionsField,
   translationsField,
+];
+
+// Preset description types for products
+const descriptionPresets = [
+  { type: 'shortDescription', label: 'Short Description', placeholder: 'Brief product summary shown on the product card', confirmed: true, required: true, multiline: true },
+  { type: 'headlinePrice', label: 'Headline Price', placeholder: 'e.g. yearly up to 6% interest rate', confirmed: true, required: true },
+  { type: 'priceCompliance', label: 'Price Compliance', placeholder: 'e.g. Get a fixed return for your chosen term.', confirmed: true, required: false },
+  { type: 'longDescription', label: 'Long Description', placeholder: 'Full product details (supports markdown: **bold**, *italic*, bullet lists)', confirmed: false, required: false, multiline: true },
+  { type: 'showMoreHeading', label: 'Show More Heading', placeholder: 'e.g. Product Details', confirmed: false, required: false },
+  { type: 'priceDescription', label: 'Price Description', placeholder: 'Secondary pricing text below headline price', confirmed: false, required: false },
+  { type: 'faqHeading', label: 'FAQ Heading', placeholder: 'e.g. Frequently Asked Questions', confirmed: false, required: false },
 ];
 
 const featureFields = [
@@ -149,10 +161,9 @@ export const endpoints = [
       {
         key: 'descriptions',
         label: 'Descriptions',
-        type: T.ARRAY,
+        type: T.DESCRIPTIONS,
         required: true,
-        itemType: 'object',
-        itemLabel: 'Description',
+        presets: descriptionPresets,
         itemFields: descriptionFields,
       },
       {
@@ -160,7 +171,7 @@ export const endpoints = [
         label: 'Features',
         type: T.ARRAY,
         required: true,
-        maxItems: 3,
+        maxItems: 5,
         itemType: 'object',
         itemLabel: 'Feature',
         itemFields: featureFields,

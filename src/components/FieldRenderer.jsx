@@ -285,6 +285,16 @@ function FieldItem({ field, value, onChange, allFields, allValues, endpointId, e
     );
   }
 
+  // Descriptions (preset description types)
+  if (type === 'descriptions') {
+    return (
+      <div className="field-group">
+        {renderLabel()}
+        <DescriptionsPresetField field={field} value={value || []} onChange={onChange} />
+      </div>
+    );
+  }
+
   // Array field
   if (type === 'array') {
     return (
@@ -329,6 +339,166 @@ function HelpTip({ description, constraints }) {
         </div>
       )}
     </span>
+  );
+}
+
+/**
+ * Preset descriptions renderer — shows a fixed set of description slots.
+ * Confirmed types are shown normally; unconfirmed ones are grouped in a collapsible section.
+ * Value is an array of { type, content, additions, translations }.
+ */
+function DescriptionsPresetField({ field, value, onChange }) {
+  const presets = field.presets || [];
+  const [showUnconfirmed, setShowUnconfirmed] = useState(false);
+
+  const confirmed = presets.filter((p) => p.confirmed);
+  const unconfirmed = presets.filter((p) => !p.confirmed);
+
+  // Get content for a preset type
+  const getContent = (presetType) => {
+    const item = value.find((d) => d.type === presetType);
+    return item?.content || '';
+  };
+
+  // Get translation for a preset type
+  const getTranslation = (presetType, locale) => {
+    const item = value.find((d) => d.type === presetType);
+    return item?.translations?.[locale]?.content || '';
+  };
+
+  // Ensure an item exists in the array for this presetType, returning the updated array
+  const ensureItem = (arr, presetType) => {
+    const idx = arr.findIndex((d) => d.type === presetType);
+    if (idx >= 0) return arr;
+    return [...arr, { type: presetType, content: '', additions: {}, translations: {} }];
+  };
+
+  // Update content for a preset type
+  const setContent = (presetType, content) => {
+    let next = [...value];
+    const idx = next.findIndex((d) => d.type === presetType);
+    if (idx >= 0) {
+      if (content) {
+        // Also auto-update English translation
+        const existing = next[idx];
+        const trans = { ...(existing.translations || {}) };
+        trans['en-US'] = { content };
+        next[idx] = { ...existing, content, translations: trans };
+      } else {
+        // If content cleared and no Albanian translation, remove the item
+        const hasAlb = next[idx]?.translations?.['sq-AL']?.content?.trim();
+        if (!hasAlb) {
+          next.splice(idx, 1);
+        } else {
+          const trans = { ...(next[idx].translations || {}) };
+          delete trans['en-US'];
+          next[idx] = { ...next[idx], content: '', translations: trans };
+        }
+      }
+    } else if (content) {
+      next.push({ type: presetType, content, additions: {}, translations: { 'en-US': { content } } });
+    }
+    onChange(next);
+  };
+
+  // Update translation for a preset type + locale
+  const setTranslation = (presetType, locale, text) => {
+    let next = ensureItem([...value], presetType);
+    const idx = next.findIndex((d) => d.type === presetType);
+    const item = { ...next[idx] };
+    const trans = { ...(item.translations || {}) };
+    if (text.trim()) {
+      trans[locale] = { content: text };
+    } else {
+      delete trans[locale];
+    }
+    item.translations = trans;
+    next[idx] = item;
+    // Clean up item if totally empty (no content and no translations)
+    if (!item.content?.trim() && Object.keys(item.translations).length === 0) {
+      next.splice(idx, 1);
+    }
+    onChange(next);
+  };
+
+  const renderSlot = (preset) => {
+    const content = getContent(preset.type);
+    const albTranslation = getTranslation(preset.type, 'sq-AL');
+
+    return (
+      <div key={preset.type} className={`desc-preset-slot${!preset.confirmed ? ' desc-preset-unconfirmed' : ''}`}>
+        <div className="desc-preset-label">
+          <span className="desc-preset-name">
+            {preset.label}
+            {preset.required && <span className="required-star">*</span>}
+          </span>
+          <span className="desc-preset-type">{preset.type}</span>
+        </div>
+        {preset.multiline ? (
+          <textarea
+            value={content}
+            onChange={(e) => setContent(preset.type, e.target.value)}
+            placeholder={preset.placeholder}
+            className="field-input desc-preset-input"
+            rows={3}
+          />
+        ) : (
+          <input
+            type="text"
+            value={content}
+            onChange={(e) => setContent(preset.type, e.target.value)}
+            placeholder={preset.placeholder}
+            className="field-input desc-preset-input"
+          />
+        )}
+        {/* Albanian translation row */}
+        <div className="desc-trans-row">
+          <span className="desc-trans-flag" title="Albanian translation">🇦🇱</span>
+          {preset.multiline ? (
+            <textarea
+              value={albTranslation}
+              onChange={(e) => setTranslation(preset.type, 'sq-AL', e.target.value)}
+              placeholder={`${preset.label} in Shqip`}
+              className="field-input desc-trans-input"
+              rows={2}
+            />
+          ) : (
+            <input
+              type="text"
+              value={albTranslation}
+              onChange={(e) => setTranslation(preset.type, 'sq-AL', e.target.value)}
+              placeholder={`${preset.label} in Shqip`}
+              className="field-input desc-trans-input"
+            />
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="desc-presets">
+      {confirmed.map(renderSlot)}
+
+      {unconfirmed.length > 0 && (
+        <div className="desc-unconfirmed-section">
+          <button
+            type="button"
+            className="desc-unconfirmed-toggle"
+            onClick={() => setShowUnconfirmed(!showUnconfirmed)}
+          >
+            <span className={`toggle-chevron${!showUnconfirmed ? ' chevron-collapsed' : ''}`}>▾</span>
+            Additional types
+            <span className="desc-unconfirmed-badge">⚠ not confirmed</span>
+          </button>
+          {showUnconfirmed && (
+            <div className="desc-unconfirmed-list">
+              {unconfirmed.map(renderSlot)}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

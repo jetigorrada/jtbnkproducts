@@ -70,6 +70,19 @@ export default function EndpointForm({ endpoint }) {
             }
           } else if (f.type === 'translations') {
             // translations auto-filled — skip
+          } else if (f.type === 'descriptions') {
+            // Validate required preset descriptions
+            const arr = Array.isArray(val) ? val : [];
+            if (f.presets) {
+              f.presets.forEach((preset) => {
+                if (preset.required) {
+                  const item = arr.find((d) => d.type === preset.type);
+                  if (!item?.content?.trim()) {
+                    errors.push(`${label} → ${preset.label} is required`);
+                  }
+                }
+              });
+            }
           } else if (f.type === 'hierarchy') {
             if (!Array.isArray(val) || val.length === 0) {
               errors.push(`${label} is required`);

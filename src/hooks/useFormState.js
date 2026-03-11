@@ -62,6 +62,34 @@ export function buildBodyFromSchema(fields, values) {
         result[field.key] = cleaned;
         hasKeys = true;
       }
+    } else if (field.type === 'descriptions') {
+      // Descriptions preset: value is already an array of { type, content, additions, translations }
+      if (Array.isArray(val) && val.length > 0) {
+        const cleaned = val
+          .filter((d) => d.type && d.content?.trim())
+          .map((d) => {
+            const item = { type: d.type, content: d.content.trim(), additions: d.additions || {} };
+            // Include translations if present
+            if (d.translations && typeof d.translations === 'object') {
+              const trans = {};
+              for (const [locale, locObj] of Object.entries(d.translations)) {
+                if (locObj && typeof locObj === 'object' && Object.keys(locObj).some((k) => locObj[k]?.trim?.())) {
+                  const cleaned2 = {};
+                  for (const [k, v] of Object.entries(locObj)) {
+                    if (typeof v === 'string' && v.trim()) cleaned2[k] = v.trim();
+                  }
+                  if (Object.keys(cleaned2).length > 0) trans[locale] = cleaned2;
+                }
+              }
+              if (Object.keys(trans).length > 0) item.translations = trans;
+            }
+            return item;
+          });
+        if (cleaned.length > 0) {
+          result[field.key] = cleaned;
+          hasKeys = true;
+        }
+      }
     } else if (field.type === 'array') {
       if (!Array.isArray(val) || val.length === 0) continue;
       if (field.itemType === 'simple') {
